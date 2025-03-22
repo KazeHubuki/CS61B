@@ -39,8 +39,8 @@ public class ArrayDeque<T> implements Iterable<T>{
         if (size == items.length){
             resize(items.length * 2);
         }
-        tail = (tail + 1) % items.length;
         items[tail] = item;
+        tail = (tail + 1) % items.length;
         size += 1;
     }
 
