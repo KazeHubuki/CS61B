@@ -3,8 +3,6 @@ package gh2;
 import deque.ArrayDeque;
 import deque.Deque;
 
-import java.nio.Buffer;
-
 //Note: This file will not compile until you complete the Deque implementations
 public class GuitarString {
     /** Constants. Do not change. In case you're curious, the keyword final
@@ -51,4 +49,3 @@ public class GuitarString {
         return buffer.get(0);
     }
 }
-    // TODO: Remove all comments that say TODO when you're done.
