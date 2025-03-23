@@ -17,8 +17,9 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
     }
 
     @SuppressWarnings("unchecked")
-    public void resize(int capacity) {
+    private void resize(int capacity) {
         T[] newItems = (T[]) new Object[capacity];
+        head = head % capacity;
         System.arraycopy(items, head, newItems, 0, size - head);
         System.arraycopy(items, 0, newItems, size - head, head);
         items = newItems;
@@ -36,7 +37,7 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
     }
 
     public void addLast(T item) {
-        if (size == items.length){
+        if (size == items.length) {
             resize(items.length * 2);
         }
         items[tail] = item;
@@ -74,9 +75,9 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
         if (size == 0) {
             return null;
         }
+        tail = (tail - 1 + items.length) % items.length;
         T item = items[tail];
         items[tail] = null;
-        tail = (tail - 1 + items.length) % items.length;
         size -= 1;
         if (items.length >= 16 && (double) size / items.length < 0.25) {
             resize(items.length / 4);
@@ -96,7 +97,7 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
 
         @Override
         public boolean hasNext() {
-            return (items[index + 1] != null);
+            return (get(index + 1) != null);
         }
 
         @Override

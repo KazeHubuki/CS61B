@@ -4,7 +4,7 @@ import java.util.Iterator;
 
 public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
 
-    public static class ListNode<T> {
+    private static class ListNode<T> {
         T item;
         ListNode<T> prev;
         ListNode<T> next;
@@ -93,25 +93,12 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
         return p.item;
     }
 
-    public ListNode<T> getNode(int index) {
-        int i = 0;
-        ListNode<T> p = sentinel.next;
-        while (i < index) {
-            if (p == sentinel) {
-                return null;
-            }
-            p = p.next;
-            i += 1;
-        }
-        return p;
-    }
-
     public T getRecursive(int index) {
         ListNode<T> p = sentinel.next;
         return helper(index, p);
     }
 
-    public T helper(int index, ListNode<T> p) {
+    private T helper(int index, ListNode<T> p) {
         if (p == sentinel) {
             return null;
         }
