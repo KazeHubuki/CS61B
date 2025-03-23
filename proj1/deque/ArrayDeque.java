@@ -2,7 +2,7 @@ package deque;
 
 import java.util.Iterator;
 
-public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
+public class ArrayDeque<T> implements Deque<T> {
     private T[] items;
     private int size;
     private int head;
@@ -19,9 +19,9 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
     @SuppressWarnings("unchecked")
     private void resize(int capacity) {
         T[] newItems = (T[]) new Object[capacity];
-        head = head % capacity;
-        System.arraycopy(items, head, newItems, 0, size - head);
-        System.arraycopy(items, 0, newItems, size - head, head);
+        for (int i = 0; i < size; i += 1) {
+            newItems[i] = get(i);
+        }
         items = newItems;
         head = 0;
         tail = size;
@@ -97,7 +97,7 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
 
         @Override
         public boolean hasNext() {
-            return (get(index + 1) != null);
+            return (get(index) != null);
         }
 
         @Override
@@ -118,19 +118,21 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof ArrayDeque<?>)) {
+        if (!(o instanceof Deque)) {
             return false;
         }
-        ArrayDeque<?> other = (ArrayDeque<?>) o;
+        Deque<?> other = (Deque<?>) o;
         if (this.size() != other.size()) {
             return false;
         }
-        int index = 0;
-        while (this.get(index) != null || other.get(index) != null) {
-            if (!this.get(index).equals(other.get(index))) {
+        Iterator<T> thisIterator = this.iterator();
+        Iterator<?> otherIterator = other.iterator();
+        while (thisIterator.hasNext() && otherIterator.hasNext()) {
+            T thisElement = thisIterator.next();
+            Object otherElement = otherIterator.next();
+            if (!(thisElement.equals(otherElement))) {
                 return false;
             }
-            index += 1;
         }
         return true;
     }

@@ -2,14 +2,14 @@ package deque;
 
 import java.util.Iterator;
 
-public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
+public class LinkedListDeque<T> implements Deque<T> {
 
     private static class ListNode<T> {
         T item;
         ListNode<T> prev;
         ListNode<T> next;
 
-        public ListNode(T item) {
+        ListNode(T item) {
             this.item = item;
             this.prev = null;
             this.next = null;
@@ -135,22 +135,23 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof LinkedListDeque)) {
+        if (!(o instanceof Deque)) {
             return false;
         }
-        LinkedListDeque<?> other = (LinkedListDeque<?>) o;
+        Deque<?> other = (Deque<?>) o;
         if (this.size() != other.size()) {
             return false;
         }
-        ListNode<T> thisCurrent = this.sentinel.next;
-        ListNode<?> otherCurrent = other.sentinel.next;
-        while (thisCurrent != this.sentinel && otherCurrent != other.sentinel) {
-            if (!thisCurrent.item.equals(otherCurrent.item)) {
+        Iterator<T> thisIterator = this.iterator();
+        Iterator<?> otherIterator = other.iterator();
+        while (thisIterator.hasNext() && otherIterator.hasNext()) {
+            T thisElement = thisIterator.next();
+            Object otherElement = otherIterator.next();
+            if (!(thisElement.equals(otherElement))) {
                 return false;
             }
-            thisCurrent = thisCurrent.next;
-            otherCurrent = otherCurrent.next;
         }
         return true;
     }
 }
+
