@@ -15,20 +15,26 @@ public class TestArrayDequeEC {
         ArrayDequeSolution<String> callsSeries = new ArrayDequeSolution<>();
         for (int i = 0; i < 500; i += 1) {
             int operationNumber = StdRandom.uniform(4);
-            if (operationNumber == 0) {
-                studentAD.addFirst(1);
-                testAD.addFirst(1);
-                addOperation(callsSeries, String.format("addFirst(%d)", 1));
-            } else if (operationNumber == 1) {
-                studentAD.addLast(2);
-                testAD.addLast(2);
-                addOperation(callsSeries, String.format("addLast(%d)", 2));
-            } else if (operationNumber == 2 && !testAD.isEmpty()) {
+            int randomValue = StdRandom.uniform(100); // 生成 0-99 的随机数
+
+            if (operationNumber == 0) { // addFirst
+                studentAD.addFirst(randomValue);
+                testAD.addFirst(randomValue);
+                addOperation(callsSeries, String.format("addFirst(%d)", randomValue));
+            } else if (operationNumber == 1) { // addLast
+                studentAD.addLast(randomValue);
+                testAD.addLast(randomValue);
+                addOperation(callsSeries, String.format("addLast(%d)", randomValue));
+            } else if (operationNumber == 2 && !testAD.isEmpty()) { // removeFirst
                 addOperation(callsSeries, "removeFirst()");
-                assertEquals(getMessage(callsSeries), testAD.removeFirst(), studentAD.removeFirst());
-            } else if (operationNumber == 3 && !testAD.isEmpty()) {
+                Integer expected = testAD.removeFirst();
+                Integer actual = studentAD.removeFirst();
+                assertEquals(getMessage(callsSeries), expected, actual);
+            } else if (operationNumber == 3 && !testAD.isEmpty()) { // removeLast
                 addOperation(callsSeries, "removeLast()");
-                assertEquals(getMessage(callsSeries), testAD.removeLast(), studentAD.removeLast());
+                Integer expected = testAD.removeLast();
+                Integer actual = studentAD.removeLast();
+                assertEquals(getMessage(callsSeries), expected, actual);
             }
         }
     }
