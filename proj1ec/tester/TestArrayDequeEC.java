@@ -6,9 +6,7 @@ import edu.princeton.cs.algs4.StdRandom;
 import org.junit.Test;
 import student.StudentArrayDeque;
 
-import java.util.Iterator;
-
-public class TestArrayEC {
+public class TestArrayDequeEC {
 
     @Test
     public void testRandomOperation() {
