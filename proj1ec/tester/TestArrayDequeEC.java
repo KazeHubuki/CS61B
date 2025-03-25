@@ -15,22 +15,22 @@ public class TestArrayDequeEC {
         ArrayDequeSolution<String> callsSeries = new ArrayDequeSolution<>();
         for (int i = 0; i < 500; i += 1) {
             int operationNumber = StdRandom.uniform(4);
-            int randomValue = StdRandom.uniform(100); // 生成 0-99 的随机数
+            int randomValue = StdRandom.uniform(100);
 
-            if (operationNumber == 0) { // addFirst
+            if (operationNumber == 0) {
                 studentAD.addFirst(randomValue);
                 testAD.addFirst(randomValue);
                 addOperation(callsSeries, String.format("addFirst(%d)", randomValue));
-            } else if (operationNumber == 1) { // addLast
+            } else if (operationNumber == 1) {
                 studentAD.addLast(randomValue);
                 testAD.addLast(randomValue);
                 addOperation(callsSeries, String.format("addLast(%d)", randomValue));
-            } else if (operationNumber == 2 && !testAD.isEmpty()) { // removeFirst
+            } else if (operationNumber == 2 && !testAD.isEmpty()) {
                 addOperation(callsSeries, "removeFirst()");
                 Integer expected = testAD.removeFirst();
                 Integer actual = studentAD.removeFirst();
                 assertEquals(getMessage(callsSeries), expected, actual);
-            } else if (operationNumber == 3 && !testAD.isEmpty()) { // removeLast
+            } else if (operationNumber == 3 && !testAD.isEmpty()) {
                 addOperation(callsSeries, "removeLast()");
                 Integer expected = testAD.removeLast();
                 Integer actual = studentAD.removeLast();
