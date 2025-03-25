@@ -48,7 +48,6 @@ public class TestArrayDequeEC {
 
     private String getMessage(ArrayDequeSolution<String> callsSeries) {
         StringBuilder message = new StringBuilder();
-        message.append("\n");
         for (String call : callsSeries) {
             message.append(call).append("\n");
         }
