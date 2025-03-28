@@ -20,7 +20,6 @@ public class CapersRepository {
 
     /** Main metadata folder. */
     static final File CAPERS_FOLDER = join(CWD, ".capers");
-                                            //      function in Utils
 
     /**
      * Does required filesystem operations to allow for persistence.
