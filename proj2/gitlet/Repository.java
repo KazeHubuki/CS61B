@@ -1,19 +1,20 @@
 package gitlet;
 
 import java.io.File;
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+
 import static gitlet.Utils.*;
 
-// TODO: any imports you need here
-
 /** Represents a gitlet repository.
- *  TODO: It's a good idea to give a description here of what else this Class
- *  does at a high level.
  *
- *  @author TODO
+ *  @author George Yuan
  */
-public class Repository {
+public class Repository implements Serializable {
     /**
-     * TODO: add instance variables here.
      *
      * List all instance variables of the Repository class here with a useful
      * comment above them describing what that variable represents and how that
@@ -21,9 +22,161 @@ public class Repository {
      */
 
     /** The current working directory. */
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     public static final File CWD = new File(System.getProperty("user.dir"));
     /** The .gitlet directory. */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
+    /** The commits' directory. */
+    public static final File COMMITS_DIR = join(GITLET_DIR, "commits");
+    /** The .gitlet/blobs directory. */
+    public static final File BLOBS_DIR = join(GITLET_DIR, "blobs");
+    /** The .gitlet/branches directory. */
+    public static final File BRANCHES_DIR = join(GITLET_DIR, "branches");
 
-    /* TODO: fill in the rest of this class. */
+    /** HEAD points to the current commit. */
+    private String HEAD;
+
+    public Repository() {
+        if (GITLET_DIR.exists()) {
+            File repository = join(GITLET_DIR, "repo");
+            if (repository.exists()) {
+                Repository repo = readObject(repository, Repository.class);
+                this.HEAD = repo.HEAD;
+            }
+        }
+    }
+
+    public void saveRepository() {
+        File repository = join(GITLET_DIR, "repo");
+        writeObject(repository, this);
+    }
+
+    public void init() {
+        if (GITLET_DIR.exists()) {
+            System.out.println("A Gitlet version-control system already exists"
+                               + "in the current directory.");
+            System.exit(0);
+        }
+        GITLET_DIR.mkdir();
+        COMMITS_DIR.mkdir();
+        Commit initialCommit = new Commit();
+        initialCommit.saveCommit();
+        HEAD = initialCommit.getCommitID();
+        BLOBS_DIR.mkdir();
+        BRANCHES_DIR.mkdir();
+        this.saveRepository();
+    }
+
+    public void add(String fileName) {
+        File fileToBeAdded = join(CWD, fileName);
+        if (!fileToBeAdded.exists()) {
+            System.out.println("File does not exist.");
+            System.exit(0);
+        }
+
+        StagingArea stagingArea = new StagingArea();
+        stagingArea.addFile(fileToBeAdded, HEAD);
+        stagingArea.saveStagingArea();
+    }
+
+    public void commit(String message) {
+        if (message.isEmpty()) {
+            System.out.println("Please enter a commit message.");
+            System.exit(0);
+        }
+        StagingArea stagingArea = new StagingArea();
+        Map<String, String> additionStage = stagingArea.getStageForAddition();
+        List<String> removalStage = stagingArea.getStageForRemoval();
+        if (additionStage.isEmpty() && removalStage.isEmpty()) {
+            System.out.println("No changes added to the commit.");
+            System.exit(0);
+        }
+
+        Commit currentCommit = Commit.findCommit(HEAD);
+        Map<String, String> newFileMap = new HashMap<>(currentCommit.getFileNameToBlobID());
+        for (String fileName : additionStage.keySet()) {
+            newFileMap.put(fileName, additionStage.get(fileName));
+        }
+        for (String fileName : removalStage) {
+            newFileMap.remove(fileName);
+        }
+        Commit newCommit = new Commit(message, HEAD, newFileMap);
+        newCommit.saveCommit();
+
+        HEAD = newCommit.getCommitID();
+        stagingArea.clear();
+        stagingArea.saveStagingArea();
+        saveRepository();
+    }
+
+    public void remove(String fileName) {
+        File fileToBeRemoved = join(CWD, fileName);
+        if (!fileToBeRemoved.exists()) {
+            System.out.println("File does not exist.");
+            System.exit(0);
+        }
+
+        StagingArea stagingArea = new StagingArea();
+        Map<String, String> additionStage = stagingArea.getStageForAddition();
+        Commit currentCommit = Commit.findCommit(HEAD);
+        Map<String, String> currentFileMap = currentCommit.getFileNameToBlobID();
+        if (!additionStage.containsKey(fileName) && !currentFileMap.containsKey(fileName)) {
+            System.out.println("No reason to remove this file.");
+            System.exit(0);
+        }
+        stagingArea.removeFile(fileToBeRemoved, currentFileMap);
+        stagingArea.saveStagingArea();
+    }
+
+    public void log() {
+        Commit currentCommit = Commit.findCommit(HEAD);
+        while (currentCommit != null) {
+            System.out.println(currentCommit);
+            String parentCommitID = currentCommit.getParentCommitID();
+            if (parentCommitID == null) {
+                break;
+            }
+            currentCommit = Commit.findCommit(parentCommitID);
+        }
+    }
+
+    public void globalLog() {
+        // 'Commits' returned here are actually their commitID
+        List<String> commits = plainFilenamesIn(COMMITS_DIR);
+        for (String commit : commits) {
+            System.out.println(Commit.findCommit(commit));
+        }
+    }
+
+    public void checkOutWithFileName(String fileName) {
+        Commit currentCommit = Commit.findCommit(HEAD);
+        Map<String, String> currentFileMap = currentCommit.getFileNameToBlobID();
+        if (!currentFileMap.containsKey(fileName)) {
+            System.out.println("File does not exist in that commit.");
+            System.exit(0);
+        }
+        File fileToBeCheckedOut = join(CWD, fileName);
+        File fileBlob = join(BLOBS_DIR, currentFileMap.get(fileName));
+        byte[] content = readObject(fileBlob, Blob.class).getFileContent();
+        writeContents(fileToBeCheckedOut, content);
+    }
+
+    public void checkOutWithCommitIDAndFileName(String commitID, String fileName) {
+        Commit targetCommit = Commit.findCommit(commitID);
+        if (targetCommit == null) {
+            System.out.println("No commit with that id exists.");
+            System.exit(0);
+        }
+        Map<String, String> targetFileMap = targetCommit.getFileNameToBlobID();
+        if (!targetFileMap.containsKey(fileName)) {
+            System.out.println("File does not exist in that commit.");
+            System.exit(0);
+        }
+        File fileToBeCheckedOut = join(CWD, fileName);
+        File fileBlob = join(BLOBS_DIR, targetFileMap.get(fileName));
+        byte[] content = readObject(fileBlob, Blob.class).getFileContent();
+        writeContents(fileToBeCheckedOut, content);
+    }
 }
