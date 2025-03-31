@@ -12,8 +12,11 @@ public class StagingArea implements Serializable {
 
     /** A map stores the file names along with their blobIDs */
     private Map<String, String> stageForAddition;
+    /** A list stores the file names */
     private List<String> stageForRemoval;
 
+    /** If the file "stage" already exists, then read its content.
+     * Otherwise, create a new "stage" file.*/
     public StagingArea() {
         if (Repository.GITLET_DIR.exists()) {
             File stage = join(Repository.GITLET_DIR, "stage");
@@ -35,13 +38,18 @@ public class StagingArea implements Serializable {
         writeObject(stage, this);
     }
 
+    /** Add a file to the stage. If the file is identical to any file
+     * in the current working directory (meaning it is not changed),
+     * then do not add it. Save new files as blobs.*/
     public void addFile(File fileToBeAdded, String HEAD) {
         String fileName = fileToBeAdded.getName();
         if (stageForRemoval.contains(fileName)) {
             stageForRemoval.remove(fileName);
         }
+
         Commit currentCommit = Commit.findCommit(HEAD);
         Map<String, String> currentFileMap = currentCommit.getFileNameToBlobID();
+
         // Check if the file added is identical to any file in currentFileMap
         Blob newBlob = new Blob(readContents(fileToBeAdded));
         String newBlobID = newBlob.getBlobID();

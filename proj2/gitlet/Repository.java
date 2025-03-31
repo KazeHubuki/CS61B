@@ -15,7 +15,6 @@ import static gitlet.Utils.*;
  */
 public class Repository implements Serializable {
     /**
-     *
      * List all instance variables of the Repository class here with a useful
      * comment above them describing what that variable represents and how that
      * variable is used. We've provided two examples for you.
@@ -69,6 +68,7 @@ public class Repository implements Serializable {
         this.saveRepository();
     }
 
+    // Add a file to the stage.
     public void add(String fileName) {
         File fileToBeAdded = join(CWD, fileName);
         if (!fileToBeAdded.exists()) {
@@ -82,6 +82,7 @@ public class Repository implements Serializable {
     }
 
     public void commit(String message) {
+        // Failure cases if there is no commit message or changes added to the commit.
         if (message.isEmpty()) {
             System.out.println("Please enter a commit message.");
             System.exit(0);
@@ -94,6 +95,7 @@ public class Repository implements Serializable {
             System.exit(0);
         }
 
+        // Operate addition and removal and produce a new commit.
         Commit currentCommit = Commit.findCommit(HEAD);
         Map<String, String> newFileMap = new HashMap<>(currentCommit.getFileNameToBlobID());
         for (String fileName : additionStage.keySet()) {
@@ -105,12 +107,14 @@ public class Repository implements Serializable {
         Commit newCommit = new Commit(message, HEAD, newFileMap);
         newCommit.saveCommit();
 
+        // Reset the repository and staging area.
         HEAD = newCommit.getCommitID();
         stagingArea.clear();
         stagingArea.saveStagingArea();
         saveRepository();
     }
 
+    // Remove a file from the CWD. The change will be committed in the next commit.
     public void remove(String fileName) {
         File fileToBeRemoved = join(CWD, fileName);
         if (!fileToBeRemoved.exists()) {
@@ -118,6 +122,8 @@ public class Repository implements Serializable {
             System.exit(0);
         }
 
+        // If the file is neither in the addition stage nor current commit files,
+        // then there is no reason to remove it.
         StagingArea stagingArea = new StagingArea();
         Map<String, String> additionStage = stagingArea.getStageForAddition();
         Commit currentCommit = Commit.findCommit(HEAD);
@@ -130,6 +136,7 @@ public class Repository implements Serializable {
         stagingArea.saveStagingArea();
     }
 
+    // Print out commits history from the current commit to the initial commit.
     public void log() {
         Commit currentCommit = Commit.findCommit(HEAD);
         while (currentCommit != null) {
@@ -142,14 +149,16 @@ public class Repository implements Serializable {
         }
     }
 
+    // "Log" but ignores the order.
     public void globalLog() {
-        // 'Commits' returned here are actually their commitID
+        // 'Commits' returned here are actually their commitID.
         List<String> commits = plainFilenamesIn(COMMITS_DIR);
         for (String commit : commits) {
             System.out.println(Commit.findCommit(commit));
         }
     }
 
+    // Restore the content of a particular file from the current commit.
     public void checkOutWithFileName(String fileName) {
         Commit currentCommit = Commit.findCommit(HEAD);
         Map<String, String> currentFileMap = currentCommit.getFileNameToBlobID();
@@ -157,23 +166,29 @@ public class Repository implements Serializable {
             System.out.println("File does not exist in that commit.");
             System.exit(0);
         }
+
+        // Find the blob stored in the current commit,
+        // read the content and write it to the file.
         File fileToBeCheckedOut = join(CWD, fileName);
         File fileBlob = join(BLOBS_DIR, currentFileMap.get(fileName));
         byte[] content = readObject(fileBlob, Blob.class).getFileContent();
         writeContents(fileToBeCheckedOut, content);
     }
 
+    // Restore the content of a particular file from a particular commit.
     public void checkOutWithCommitIDAndFileName(String commitID, String fileName) {
         Commit targetCommit = Commit.findCommit(commitID);
         if (targetCommit == null) {
             System.out.println("No commit with that id exists.");
             System.exit(0);
         }
+
         Map<String, String> targetFileMap = targetCommit.getFileNameToBlobID();
         if (!targetFileMap.containsKey(fileName)) {
             System.out.println("File does not exist in that commit.");
             System.exit(0);
         }
+
         File fileToBeCheckedOut = join(CWD, fileName);
         File fileBlob = join(BLOBS_DIR, targetFileMap.get(fileName));
         byte[] content = readObject(fileBlob, Blob.class).getFileContent();
