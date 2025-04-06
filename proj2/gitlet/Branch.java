@@ -1,6 +1,7 @@
 package gitlet;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,7 @@ public class Branch {
         }
 
         for (String fileName : currentFileMap.keySet()) {
-            if (!targetFileMap.keySet().contains(fileName)) {
+            if (!targetFileMap.containsKey(fileName)) {
                 restrictedDelete(fileName);
             }
         }
@@ -109,13 +110,13 @@ public class Branch {
         String currentCommitID = Branch.getCurrentCommitID();
         if (Objects.equals(splitPointID, branchCommitID)) {
             System.out.println("Given branch is an ancestor of the current branch.");
-            return hasConflict;
+            return hasConflict; // false
         }
         if (Objects.equals(splitPointID, currentCommitID)) {
             Branch.updateBranch(getCurrentBranchName(),
                     Branch.getBranchCurrentCommitID(branchName));
             System.out.println("Current branch fast-forwarded.");
-            return hasConflict;
+            return hasConflict; // false
         }
 
         Commit splitCommit = Commit.findCommit(splitPointID);
@@ -134,56 +135,47 @@ public class Branch {
             String currentBlobID = currentFiles.getOrDefault(fileName, null);
             String branchBlobID = branchFiles.getOrDefault(fileName, null);
 
-            // If both are operated by the same way, do nothing.
             if (Objects.equals(currentBlobID, branchBlobID)) {
                 continue;
             }
 
-            // Case that file does not exist in the split point, i.e. new file added.
-            if (splitBlobID == null) {
-                // Note that if any two of these 3 blob IDs are null,
-                // then the third one must be not null.
-                if (branchBlobID == null) { // Determine that `currentBlobID != null`
-                    // Added only in current -> do nothing
-                    continue;
-                } else if (currentBlobID == null) { // Determine that `branchBlobID != null`.
-                    // Added only in target -> checkout the file and stage it.
+            boolean inSplit = splitBlobID != null;
+            boolean inCurrent = currentBlobID != null;
+            boolean inGiven = branchBlobID != null;
+            boolean currentModified = !Objects.equals(splitBlobID, currentBlobID) ;
+            boolean branchModified = !Objects.equals(splitBlobID, branchBlobID);
+
+            if (!inSplit) { // if not present at the split point,
+                // only present at the current branch, do nothing.
+
+                if (inGiven && !inCurrent) {
+                    // only present at the given branch, checkout and stage.
                     Repository.checkOutWithCommitIDAndFileName(branchCommitID, fileName);
                     Repository.add(fileName);
-                } else {
-                    // Added in both -> mark conflict.
+                } else if (inGiven && inCurrent
+                        && !Objects.equals(currentBlobID, branchBlobID)) {
                     hasConflict = true;
                     System.out.println("Encountered a merge conflict.");
                     handleConflict(fileName, currentBlobID, branchBlobID);
                 }
-            // Case that file exists in the split point
-            } else {
-                boolean modifiedInCurrent = !Objects.equals(splitBlobID, currentBlobID);
-                boolean modifiedInTarget = !Objects.equals(splitBlobID, branchBlobID);
+            } else { // if present at the split point,
+                // only deleted in the current branch, do nothing
+                // only modified in the current branch, do nothing
 
-                // Handle deletes.
-                if (currentBlobID == null && !modifiedInTarget) {
-                    // Deleted in current, unchanged in target -> do nothing.
-                    continue;
-                } else if (branchBlobID == null && !modifiedInCurrent) {
-                    // Deleted in target, unchanged in current -> remove the file.
+                if (!inGiven && !currentModified) {
+                    // deleted in the given branch, not modified in the current branch, remove it
                     Repository.remove(fileName);
-                } else if (currentBlobID == null || branchBlobID == null) {
-                    // Deleted in one, changed in the other -> mark conflict.
+                } else if ((!inGiven && currentModified) || (!inCurrent && branchModified)) {
                     hasConflict = true;
                     System.out.println("Encountered a merge conflict.");
                     handleConflict(fileName, currentBlobID, branchBlobID);
-
-                // Handle modifications.
-                } else if (modifiedInCurrent && !modifiedInTarget) {
-                    // Changed only in current -> do nothing.
-                    continue;
-                } else if (!modifiedInCurrent && modifiedInTarget) {
-                    // Changed only in target -> checkout the file and stage it.
-                        Repository.checkOutWithCommitIDAndFileName(branchCommitID, fileName);
-                        Repository.add(fileName);
-                } else {
-                    // Changed in both -> mark conflict.
+                } else if (branchModified && !currentModified) {
+                    // modified in the given branch, not modified in the current branch,
+                    // checkout and stage it.
+                    Repository.checkOutWithCommitIDAndFileName(branchCommitID, fileName);
+                    Repository.add(fileName);
+                } else if (branchModified && currentModified
+                        && !Objects.equals(currentBlobID, branchBlobID)) {
                     hasConflict = true;
                     System.out.println("Encountered a merge conflict.");
                     handleConflict(fileName, currentBlobID, branchBlobID);
@@ -193,13 +185,19 @@ public class Branch {
         return hasConflict;
     }
 
-    private static void handleConflict(String fileName, String currentBlobID, String branchBlobID) {
-        byte[] currentContent = (currentBlobID != null) ? Blob.getBlobContent(currentBlobID) : "".getBytes();
-        byte[] branchContent = (branchBlobID != null) ? Blob.getBlobContent(branchBlobID) : "".getBytes();
+    private static void handleConflict(String fileName,
+                                       String currentBlobID, String branchBlobID) {
+        String currentContent = (currentBlobID != null)
+                ? new String(Blob.getBlobContent(currentBlobID), StandardCharsets.UTF_8)
+                : "";
+        String branchContent = (branchBlobID != null)
+                ? new String(Blob.getBlobContent(branchBlobID), StandardCharsets.UTF_8)
+                :"";
+
         String conflictContent = "<<<<<<< HEAD\n"
-                + currentContent
+                + currentContent + "\n"
                 + "=======\n"
-                + branchContent
+                + branchContent + "\n"
                 + ">>>>>>>\n";
         File conflictFile = join(Repository.CWD, fileName);
         writeContents(conflictFile, conflictContent);

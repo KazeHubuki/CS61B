@@ -57,8 +57,10 @@ public class StagingArea implements Serializable {
         // Check if the file added is identical to any file in currentFileMap
         Blob newBlob = new Blob(readContents(fileToBeAdded));
         String newBlobID = newBlob.getBlobID();
-        if (currentFileMap.containsKey(fileName)
-                && currentFileMap.containsValue(newBlobID)) {
+        if (newBlobID.equals(currentFileMap.get(fileName))) {
+            if (stageForAddition.containsKey(fileName)) {
+                stageForAddition.remove(fileName);
+            }
             return;
         }
         stageForAddition.put(fileName, newBlobID);
@@ -72,8 +74,11 @@ public class StagingArea implements Serializable {
         }
 
         if (currentFileMap.containsKey(fileName)) {
+            String fileBlobID = currentFileMap.get(fileName);
             stageForRemoval.add(fileName);
-            restrictedDelete(fileName);
+            if (fileToBeRemoved.exists() && fileBlobID.equals(Blob.getBlobID(fileName))) {
+                restrictedDelete(fileName);
+            }
         }
     }
 

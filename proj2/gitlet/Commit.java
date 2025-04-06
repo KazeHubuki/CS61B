@@ -101,7 +101,7 @@ public class Commit implements Serializable {
                 // deleted in the working directory,
                 // but not staged for removal or already staged for addition.
                 if (!stageForRemoval.contains(fileName)
-                        || stageForAddition.containsKey(fileName)){
+                        || stageForAddition.containsKey(fileName)) {
                     modifiedNotStagedFiles.add(fileName + " (deleted)");
                 }
             } else {

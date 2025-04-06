@@ -333,9 +333,19 @@ public class Repository implements Serializable {
             System.exit(0);
         }
         Commit currentCommit = Commit.findCommit(Branch.getCurrentCommitID());
-        if (!currentCommit.getUntrackedFiles().isEmpty()) {
-            System.out.println("There is an untracked file in the way; " +
-                    "delete it, or add and commit it first.");
+        Commit branchCommit = Commit.findCommit(Branch.getBranchCurrentCommitID(branchName));
+        Map<String, String> branchFileMap =branchCommit.getFileNameToBlobID();
+        List<String> currentUntrackedFiles = new ArrayList<>();
+        for (String file : currentCommit.getUntrackedFiles()) {
+            String fileBlobID = Blob.getBlobID(file);
+            if (!branchFileMap.containsKey(file)
+                    || !fileBlobID.equals(branchFileMap.get(file))) {
+                currentUntrackedFiles.add(file);
+            }
+        }
+        if (!currentUntrackedFiles.isEmpty()) {
+            System.out.println("There is an untracked file in the way; "
+                    + "delete it, or add and commit it first.");
             System.exit(0);
         }
 
