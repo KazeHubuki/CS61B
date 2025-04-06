@@ -18,8 +18,18 @@ public class Blob implements Serializable {
         if (!Repository.BLOBS_DIR.exists()) {
             Repository.BLOBS_DIR.mkdir();
         }
-        File blob = join(Repository.BLOBS_DIR, blobID);
-        writeObject(blob, this);
+        File blobFile = join(Repository.BLOBS_DIR, blobID);
+        writeObject(blobFile, this);
+    }
+
+    public static byte[] getBlobContent(String blobID) {
+        File blobFile = join(Repository.BLOBS_DIR, blobID);
+        return readObject(blobFile, Blob.class).getFileContent();
+    }
+
+    public static String getBlobID(String fileName) {
+        File file = join(Repository.CWD, fileName);
+        return sha1((Object) readContents(file));
     }
 
     public byte[] getFileContent() {

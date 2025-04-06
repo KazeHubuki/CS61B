@@ -17,11 +17,11 @@ public class StagingArea implements Serializable {
 
     /** If the file "stage" already exists, then read its content.
      * Otherwise, create a new "stage" file.*/
-    public StagingArea() {
+    private StagingArea() {
         if (Repository.GITLET_DIR.exists()) {
-            File stage = join(Repository.GITLET_DIR, "stage");
-            if (stage.exists()) {
-                StagingArea stagingArea = readObject(stage, StagingArea.class);
+            File stageFile = join(Repository.GITLET_DIR, "stage");
+            if (stageFile.exists()) {
+                StagingArea stagingArea = readObject(stageFile, StagingArea.class);
                 stageForAddition = stagingArea.stageForAddition;
                 stageForRemoval = stagingArea.stageForRemoval;
                 this.saveStagingArea();
@@ -33,27 +33,32 @@ public class StagingArea implements Serializable {
         }
     }
 
+    public static StagingArea getStagingArea() {
+        return new StagingArea();
+    }
+
     public void saveStagingArea() {
-        File stage = join(Repository.GITLET_DIR, "stage");
-        writeObject(stage, this);
+        File stageFile = join(Repository.GITLET_DIR, "stage");
+        writeObject(stageFile, this);
     }
 
     /** Add a file to the stage. If the file is identical to any file
      * in the current working directory (meaning it is not changed),
      * then do not add it. Save new files as blobs.*/
-    public void addFile(File fileToBeAdded, String HEAD) {
+    public void addFile(File fileToBeAdded, String currentCommitID) {
         String fileName = fileToBeAdded.getName();
         if (stageForRemoval.contains(fileName)) {
             stageForRemoval.remove(fileName);
         }
 
-        Commit currentCommit = Commit.findCommit(HEAD);
+        Commit currentCommit = Commit.findCommit(currentCommitID);
         Map<String, String> currentFileMap = currentCommit.getFileNameToBlobID();
 
         // Check if the file added is identical to any file in currentFileMap
         Blob newBlob = new Blob(readContents(fileToBeAdded));
         String newBlobID = newBlob.getBlobID();
-        if (currentFileMap.containsValue(newBlobID)) {
+        if (currentFileMap.containsKey(fileName)
+                && currentFileMap.containsValue(newBlobID)) {
             return;
         }
         stageForAddition.put(fileName, newBlobID);
