@@ -30,6 +30,8 @@ public class Commit implements Serializable {
     private Map<String, String> fileNameToBlobID;
     /** The commit ID. */
     private String commitID;
+    /** The standard length of a commit ID. */
+    public static final int STANDARD_COMMIT_ID_LENGTH = 40;
 
     public Commit() {
         timeStamp = new Date(0);
@@ -75,6 +77,16 @@ public class Commit implements Serializable {
             return null;
         }
         return readObject(targetCommit, Commit.class);
+    }
+
+    public static Commit findCommitWithShortID(String shortCommitID) {
+        List<String> matches = new ArrayList<>();
+        for (String commitID : plainFilenamesIn(Repository.COMMITS_DIR)) {
+            if (commitID.startsWith(shortCommitID)) {
+                matches.add(commitID);
+            }
+        }
+        return (matches.size() == 1) ? findCommit(matches.get(0)) : null;
     }
 
     public static Commit createMergeCommit(String message,
@@ -135,8 +147,13 @@ public class Commit implements Serializable {
         return untrackedFiles;
     }
 
+
     public String getParentCommitID() {
         return parentCommitID;
+    }
+
+    public String getSecondParentCommitID() {
+        return secondParentCommitID;
     }
 
     public String getMessage() {

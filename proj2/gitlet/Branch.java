@@ -2,11 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Objects;
+import java.util.*;
 
 import static gitlet.Utils.*;
 
@@ -50,14 +46,16 @@ public class Branch {
         Map<String, String> currentFileMap = currentCommit.getFileNameToBlobID();
         Map<String, String> targetFileMap = targetCommit.getFileNameToBlobID();
 
-        List<String> cwdFiles = plainFilenamesIn(Repository.CWD);
-        for (String fileName : cwdFiles) {
-            if (!currentFileMap.containsKey(fileName)
-                    && targetFileMap.containsKey(fileName)) {
-                System.out.println("There is an untracked file in the way; "
-                        + "delete it, or add and commit it first.");
-                System.exit(0);
+        List<String> untrackedFiles = new ArrayList<>();
+        for (String file : currentCommit.getUntrackedFiles()) {
+            if (targetFileMap.containsKey(file)) {
+                untrackedFiles.add(file);
             }
+        }
+        if (!untrackedFiles.isEmpty()) {
+            System.out.println("`There is an untracked file in the way; "
+                    + "delete it, or add and commit it first.");
+            System.exit(0);
         }
 
         for (String fileName : currentFileMap.keySet()) {
@@ -72,34 +70,50 @@ public class Branch {
             File targetFile = join(Repository.CWD, fileName);
             writeContents(targetFile, blobContent);
         }
+
+        StagingArea stagingArea = StagingArea.getStagingArea();
+        stagingArea.clear();
+        stagingArea.saveStagingArea();
     }
 
     public static String findSplitPoint(String branchName) {
         String currentCommitID = getBranchCurrentCommitID(getCurrentBranchName());
         String targetCommitID = getBranchCurrentCommitID(branchName);
-        Commit currentCommit = Commit.findCommit(currentCommitID);
-        Commit targetCommit = Commit.findCommit(targetCommitID);
 
-        HashSet<String> currentCheckedCommitID = new HashSet<>();
-        HashSet<String> targetCheckedCommitID = new HashSet<>();
-        while (currentCommitID != null && targetCommitID != null) {
-            currentCheckedCommitID.add(currentCommitID);
-            targetCheckedCommitID.add(targetCommitID);
-            if (currentCheckedCommitID.contains(targetCommitID)) {
-                return targetCommitID;
-            } else if (targetCheckedCommitID.contains(currentCommitID)) {
-                return currentCommitID;
-            } else {
-                String currentParentCommitID = currentCommit.getParentCommitID();
-                String targetParentCommitID = targetCommit.getParentCommitID();
-                currentCommitID = (currentParentCommitID != null)
-                        ? Commit.findCommit(currentParentCommitID).getCommitID()
-                        : null;
-                targetCommitID = (targetParentCommitID != null)
-                        ? Commit.findCommit(targetParentCommitID).getCommitID()
-                        : null;
-            }
+        Set<String> visitedFromCurrent = new HashSet<>();
+        Set<String> visitedFromTarget = new HashSet<>();
+        Queue<String> currentQueue = new LinkedList<>();
+        Queue<String> targetQueue = new LinkedList<>();
+
+        currentQueue.add(currentCommitID);
+        targetQueue.add(targetCommitID);
+
+        while (!currentQueue.isEmpty() || !targetQueue.isEmpty()) {
+            String cid = tryVisitNext(currentQueue, visitedFromCurrent, visitedFromTarget);
+            if (cid != null) return cid;
+
+            cid = tryVisitNext(targetQueue, visitedFromTarget, visitedFromCurrent);
+            if (cid != null) return cid;
         }
+
+        return null;
+    }
+
+    private static String tryVisitNext(Queue<String> queue, Set<String> visitedSelf, Set<String> visitedOther) {
+        if (queue.isEmpty()) return null;
+
+        String cid = queue.poll();
+        if (!visitedSelf.add(cid)) return null;
+        if (visitedOther.contains(cid)) return cid;
+
+        Commit commit = Commit.findCommit(cid);
+        if (commit.getParentCommitID() != null) {
+            queue.add(commit.getParentCommitID());
+        }
+        if (commit.getSecondParentCommitID() != null) {
+            queue.add(commit.getSecondParentCommitID());
+        }
+
         return null;
     }
 
@@ -134,7 +148,6 @@ public class Branch {
             String splitBlobID = splitFiles.getOrDefault(fileName, null);
             String currentBlobID = currentFiles.getOrDefault(fileName, null);
             String branchBlobID = branchFiles.getOrDefault(fileName, null);
-
             if (Objects.equals(currentBlobID, branchBlobID)) {
                 continue;
             }
@@ -195,9 +208,9 @@ public class Branch {
                 :"";
 
         String conflictContent = "<<<<<<< HEAD\n"
-                + currentContent + "\n"
+                + currentContent
                 + "=======\n"
-                + branchContent + "\n"
+                + branchContent
                 + ">>>>>>>\n";
         File conflictFile = join(Repository.CWD, fileName);
         writeContents(conflictFile, conflictContent);

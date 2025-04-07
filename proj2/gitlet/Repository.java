@@ -222,25 +222,17 @@ public class Repository implements Serializable {
 
     // Restore the content of a particular file from the current commit.
     public static void checkOutWithFileName(String fileName) {
-        String currentCommitID = Branch.getCurrentCommitID();
-        Commit currentCommit = Commit.findCommit(currentCommitID);
-        Map<String, String> currentFileMap = currentCommit.getFileNameToBlobID();
-        if (!currentFileMap.containsKey(fileName)) {
-            System.out.println("File does not exist in that commit.");
-            System.exit(0);
-        }
-
-        // Find the blob stored in the current commit,
-        // read the content and write it to the file.
-        String blobID = currentFileMap.get(fileName);
-        byte[] blobContent = Blob.getBlobContent(blobID);
-        File fileToBeCheckedOut = join(CWD, fileName);
-        writeContents(fileToBeCheckedOut, blobContent);
+        checkOutWithCommitIDAndFileName(Branch.getCurrentCommitID(), fileName);
     }
 
     // Restore the content of a particular file from a particular commit.
     public static void checkOutWithCommitIDAndFileName(String commitID, String fileName) {
-        Commit targetCommit = Commit.findCommit(commitID);
+        Commit targetCommit;
+        if (commitID.length() < Commit.STANDARD_COMMIT_ID_LENGTH) {
+            targetCommit = Commit.findCommitWithShortID(commitID);
+        } else {
+            targetCommit = Commit.findCommit(commitID);
+        }
         if (targetCommit == null) {
             System.out.println("No commit with that id exists.");
             System.exit(0);
@@ -272,11 +264,7 @@ public class Repository implements Serializable {
         }
 
         Branch.checkOutBranchFiles(branchName);
-
         writeContents(HEAD, branchName);
-        StagingArea stagingArea = StagingArea.getStagingArea();
-        stagingArea.clear();
-        stagingArea.saveStagingArea();
     }
 
     public static void branch(String branchName) {
@@ -304,8 +292,13 @@ public class Repository implements Serializable {
     }
 
     public static void reset(String commitID) {
-        List<String> commitIDs = plainFilenamesIn(COMMITS_DIR);
-        if (!commitIDs.contains(commitID)) {
+        Commit targetCommit;
+        if (commitID.length() < Commit.STANDARD_COMMIT_ID_LENGTH) {
+            targetCommit = Commit.findCommitWithShortID(commitID);
+        } else {
+            targetCommit = Commit.findCommit(commitID);
+        }
+        if (targetCommit == null) {
             System.out.println("No commit with that id exists.");
             System.exit(0);
         }
