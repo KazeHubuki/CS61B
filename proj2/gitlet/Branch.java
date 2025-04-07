@@ -63,7 +63,6 @@ public class Branch {
                 restrictedDelete(fileName);
             }
         }
-
         for (String fileName : targetFileMap.keySet()) {
             String blobID = targetFileMap.get(fileName);
             byte[] blobContent = Blob.getBlobContent(blobID);
@@ -77,7 +76,7 @@ public class Branch {
     }
 
     public static String findSplitPoint(String branchName) {
-        String currentCommitID = getBranchCurrentCommitID(getCurrentBranchName());
+        String currentCommitID = getCurrentCommitID();
         String targetCommitID = getBranchCurrentCommitID(branchName);
 
         Set<String> visitedFromCurrent = new HashSet<>();
@@ -90,21 +89,22 @@ public class Branch {
 
         while (!currentQueue.isEmpty() || !targetQueue.isEmpty()) {
             String cid = tryVisitNext(currentQueue, visitedFromCurrent, visitedFromTarget);
-            if (cid != null) return cid;
+            if (cid != null) { return cid; }
 
             cid = tryVisitNext(targetQueue, visitedFromTarget, visitedFromCurrent);
-            if (cid != null) return cid;
+            if (cid != null) { return cid; }
         }
 
         return null;
     }
 
-    private static String tryVisitNext(Queue<String> queue, Set<String> visitedSelf, Set<String> visitedOther) {
-        if (queue.isEmpty()) return null;
+    private static String tryVisitNext(Queue<String> queue,
+                                       Set<String> visitedSelf, Set<String> visitedOther) {
+        if (queue.isEmpty()) { return null; }
 
         String cid = queue.poll();
-        if (!visitedSelf.add(cid)) return null;
-        if (visitedOther.contains(cid)) return cid;
+        if (!visitedSelf.add(cid)) { return null; }
+        if (visitedOther.contains(cid)) { return cid; }
 
         Commit commit = Commit.findCommit(cid);
         if (commit.getParentCommitID() != null) {
@@ -127,8 +127,10 @@ public class Branch {
             return hasConflict; // false
         }
         if (Objects.equals(splitPointID, currentCommitID)) {
-            Branch.updateBranch(getCurrentBranchName(),
-                    Branch.getBranchCurrentCommitID(branchName));
+            String currentBranchName = getCurrentBranchName();
+            Repository.checkOutWithBranchName(branchName);
+            Branch.updateBranch(currentBranchName,
+                    getCurrentCommitID());
             System.out.println("Current branch fast-forwarded.");
             return hasConflict; // false
         }
@@ -155,7 +157,7 @@ public class Branch {
             boolean inSplit = splitBlobID != null;
             boolean inCurrent = currentBlobID != null;
             boolean inGiven = branchBlobID != null;
-            boolean currentModified = !Objects.equals(splitBlobID, currentBlobID) ;
+            boolean currentModified = !Objects.equals(splitBlobID, currentBlobID);
             boolean branchModified = !Objects.equals(splitBlobID, branchBlobID);
 
             if (!inSplit) { // if not present at the split point,
@@ -205,7 +207,7 @@ public class Branch {
                 : "";
         String branchContent = (branchBlobID != null)
                 ? new String(Blob.getBlobContent(branchBlobID), StandardCharsets.UTF_8)
-                :"";
+                : "";
 
         String conflictContent = "<<<<<<< HEAD\n"
                 + currentContent

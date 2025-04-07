@@ -320,14 +320,16 @@ public class Repository implements Serializable {
         }
 
         StagingArea stagingArea = StagingArea.getStagingArea();
-        if (!stagingArea.getStageForAddition().isEmpty()
-                || !stagingArea.getStageForRemoval().isEmpty()) {
+        Map<String, String> stageForAddition = stagingArea.getStageForAddition();
+        List<String> stageForRemoval = stagingArea.getStageForRemoval();
+        if (!stageForAddition.isEmpty()
+                || !stageForRemoval.isEmpty()) {
             System.out.println("You have uncommitted changes.");
             System.exit(0);
         }
         Commit currentCommit = Commit.findCommit(Branch.getCurrentCommitID());
         Commit branchCommit = Commit.findCommit(Branch.getBranchCurrentCommitID(branchName));
-        Map<String, String> branchFileMap =branchCommit.getFileNameToBlobID();
+        Map<String, String> branchFileMap = branchCommit.getFileNameToBlobID();
         List<String> currentUntrackedFiles = new ArrayList<>();
         for (String file : currentCommit.getUntrackedFiles()) {
             String fileBlobID = Blob.getBlobID(file);
@@ -343,6 +345,9 @@ public class Repository implements Serializable {
         }
 
         boolean hasMergeConflict = Branch.mergeBranch(branchName);
+        if (stageForAddition.isEmpty() && stageForRemoval.isEmpty()) {
+            return;
+        }
         String message;
         if (hasMergeConflict) {
             message = "Encountered a merge conflict.";
