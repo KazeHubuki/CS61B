@@ -174,6 +174,7 @@ public class Repository implements Serializable {
         }
     }
 
+    // Print out different categories of status of the files.
     public static void status() {
         System.out.println("=== Branches ===");
         String currentBranchName = Branch.getCurrentBranchName();
@@ -288,6 +289,7 @@ public class Repository implements Serializable {
         branchFile.delete();
     }
 
+    // Restore the status to the given commit.
     public static void reset(String commitID) {
         Commit targetCommit;
         if (commitID.length() < Commit.STANDARD_COMMIT_ID_LENGTH) {
@@ -304,6 +306,7 @@ public class Repository implements Serializable {
         Branch.updateBranch(Branch.getCurrentBranchName(), commitID);
     }
 
+    // Merge two branches together.
     public static void merge(String branchName) {
         File branchFile = join(HEADS_DIR, branchName);
         if (!branchFile.exists()) {
@@ -332,6 +335,8 @@ public class Repository implements Serializable {
             String fileBlobID = Blob.getBlobID(file);
             if (!branchFileMap.containsKey(file)
                     || !fileBlobID.equals(branchFileMap.get(file))) {
+                // if the file is also untracked in the given branch,
+                // or with different content than in the given branch.
                 currentUntrackedFiles.add(file);
             }
         }
@@ -345,10 +350,12 @@ public class Repository implements Serializable {
         String branchCommitID = Branch.getBranchCurrentCommitID(branchName);
         String currentCommitID = Branch.getCurrentCommitID();
         if (Objects.equals(splitPointID, branchCommitID)) {
+            // Split point is the branch commit, do nothing.
             System.out.println("Given branch is an ancestor of the current branch.");
             return;
         }
         if (Objects.equals(splitPointID, currentCommitID)) {
+            // Split point is the current commit, checkout to the given branch.
             Repository.checkOutWithBranchName(branchName);
             Branch.updateBranch(currentBranchName,
                     Branch.getCurrentCommitID());

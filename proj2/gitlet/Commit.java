@@ -50,6 +50,7 @@ public class Commit implements Serializable {
         commitID = sha1((Object) serialize(this));
     }
 
+    // Only used when two branches merge together.
     private Commit(String message, String parentCommitID, String secondParentCommitID,
                    Map<String, String> fileNameToBlobID) {
         timeStamp = new Date();
@@ -99,6 +100,7 @@ public class Commit implements Serializable {
         }
     }
 
+    // Any files are added, deleted or modified but not staged.
     public List<String> getModifiedNotStagedFiles() {
         List<String> modifiedNotStagedFiles = new ArrayList<>();
         StagingArea stagingArea = StagingArea.getStagingArea();
@@ -134,6 +136,7 @@ public class Commit implements Serializable {
         return modifiedNotStagedFiles;
     }
 
+    // Untracked Files exist in the cwd but are not tracked by the current commit.
     public List<String> getUntrackedFiles() {
         List<String> untrackedFiles = new ArrayList<>();
         StagingArea stagingArea = StagingArea.getStagingArea();

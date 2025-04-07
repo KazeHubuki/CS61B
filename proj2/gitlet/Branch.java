@@ -17,6 +17,7 @@ public class Branch {
         writeContents(branchFile, currentCommitID);
     }
 
+    // Update the current commit of the given branch to the given commit.
     public static void updateBranch(String branchName, String newCommitID) {
         File branchFile = join(Repository.HEADS_DIR, branchName);
         writeContents(branchFile, newCommitID);
@@ -35,11 +36,14 @@ public class Branch {
         return readContentsAsString(branchFile);
     }
 
+    // Checkout all the files in the given branch.
+    // (Note that branch is a pointer to a commit.)
     public static void checkOutBranchFiles(String targetBranchName) {
         String targetBranchCommitID = getBranchCurrentCommitID(targetBranchName);
         checkOutCommit(targetBranchCommitID);
     }
 
+    // Checkout all the files in the given commit.
     public static void checkOutCommit(String targetCommitID) {
         Commit currentCommit = Commit.findCommit(getCurrentCommitID());
         Commit targetCommit = Commit.findCommit(targetCommitID);
@@ -75,6 +79,7 @@ public class Branch {
         stagingArea.saveStagingArea();
     }
 
+    // Use BFS to find the split point when merging two branches.
     public static String findSplitPoint(String branchName) {
         String currentCommitID = getCurrentCommitID();
         String targetCommitID = getBranchCurrentCommitID(branchName);
@@ -88,14 +93,16 @@ public class Branch {
         targetQueue.add(targetCommitID);
 
         while (!currentQueue.isEmpty() || !targetQueue.isEmpty()) {
-            String cid = tryVisitNext(currentQueue, visitedFromCurrent, visitedFromTarget);
-            if (cid != null) {
-                return cid;
+            String commitID = tryVisitNext(currentQueue,
+                    visitedFromCurrent, visitedFromTarget);
+            if (commitID != null) {
+                return commitID;
             }
 
-            cid = tryVisitNext(targetQueue, visitedFromTarget, visitedFromCurrent);
-            if (cid != null) {
-                return cid;
+            commitID = tryVisitNext(targetQueue,
+                    visitedFromTarget, visitedFromCurrent);
+            if (commitID != null) {
+                return commitID;
             }
         }
 
@@ -108,15 +115,15 @@ public class Branch {
             return null;
         }
 
-        String cid = queue.poll();
-        if (!visitedSelf.add(cid)) {
+        String commitID = queue.poll();
+        if (!visitedSelf.add(commitID)) {
             return null;
         }
-        if (visitedOther.contains(cid)) {
-            return cid;
+        if (visitedOther.contains(commitID)) {
+            return commitID;
         }
 
-        Commit commit = Commit.findCommit(cid);
+        Commit commit = Commit.findCommit(commitID);
         if (commit.getParentCommitID() != null) {
             queue.add(commit.getParentCommitID());
         }
@@ -131,18 +138,6 @@ public class Branch {
         boolean hasConflict = false;
         String branchCommitID = Branch.getBranchCurrentCommitID(branchName);
         String currentCommitID = Branch.getCurrentCommitID();
-        if (Objects.equals(splitPointID, branchCommitID)) {
-            System.out.println("Given branch is an ancestor of the current branch.");
-            return hasConflict; // false
-        }
-        if (Objects.equals(splitPointID, currentCommitID)) {
-            String currentBranchName = getCurrentBranchName();
-            Repository.checkOutWithBranchName(branchName);
-            Branch.updateBranch(currentBranchName,
-                    getCurrentCommitID());
-            System.out.println("Current branch fast-forwarded.");
-            return hasConflict; // false
-        }
 
         Commit splitCommit = Commit.findCommit(splitPointID);
         Commit currentCommit = Commit.findCommit(currentCommitID);

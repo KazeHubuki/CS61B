@@ -22,11 +22,13 @@ public class Blob implements Serializable {
         writeObject(blobFile, this);
     }
 
+    // Given a blob ID, find the content the blob stores.
     public static byte[] getBlobContent(String blobID) {
         File blobFile = join(Repository.BLOBS_DIR, blobID);
         return readObject(blobFile, Blob.class).getFileContent();
     }
 
+    // Given a file name in the cwd, calculate its current blob ID.
     public static String getBlobID(String fileName) {
         File file = join(Repository.CWD, fileName);
         return sha1((Object) readContents(file));

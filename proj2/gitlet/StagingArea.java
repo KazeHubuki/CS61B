@@ -15,8 +15,8 @@ public class StagingArea implements Serializable {
     /** A list stores the file names */
     private List<String> stageForRemoval;
 
-    /** If the file "stage" already exists, then read its content.
-     * Otherwise, create a new "stage" file.*/
+    // If the file "stage" already exists, then read its content.
+    // Otherwise, create a new "stage" file.
     private StagingArea() {
         if (Repository.GITLET_DIR.exists()) {
             File stageFile = join(Repository.GITLET_DIR, "stage");
@@ -42,9 +42,6 @@ public class StagingArea implements Serializable {
         writeObject(stageFile, this);
     }
 
-    /** Add a file to the stage. If the file is identical to any file
-     * in the current working directory (meaning it is not changed),
-     * then do not add it. Save new files as blobs.*/
     public void addFile(File fileToBeAdded, String currentCommitID) {
         String fileName = fileToBeAdded.getName();
         if (stageForRemoval.contains(fileName)) {
