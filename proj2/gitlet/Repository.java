@@ -391,7 +391,7 @@ public class Repository implements Serializable {
     // Push the current branch to the given remote branch;
     // if the branch does not exist, then create one.
     // Can only push when the given remote branch is an ancestor of the current branch.
-    public static void pushRemote(String remoteName, String branchName) throws IOException {
+    public static void pushRemote(String remoteName, String branchName) {
         Remote remote = Remote.loadRemotes();
         String remotePath = remote.getRemotePath(remoteName);
         File remoteGitletDir = new File(remotePath);
@@ -402,7 +402,12 @@ public class Repository implements Serializable {
 
         File remoteBranchFile = join(remoteGitletDir, "refs", "heads", branchName);
         if (!remoteBranchFile.exists()) {
-            remoteBranchFile.createNewFile();
+            try {
+                remoteBranchFile.createNewFile();
+            } catch (IOException e) {
+                System.out.println("Failed to create the branch file.");
+                System.exit(0);
+            }
             writeContents(remoteBranchFile, Commit.getInitialCommitID());
         }
 
