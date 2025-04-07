@@ -16,14 +16,15 @@ public class Remote implements Serializable {
     /** File that stores all remote mappings. */
     private static final File REMOTES_FILE = Utils.join(Repository.REMOTES_DIR, "remotes");
     /** Map of remote name -> path. */
-    private Map<String, String> remoteMap;
+    private TreeMap<String, String> remoteMap;
 
+    @SuppressWarnings("unchecked")
     private Remote() {
         if (!Repository.REMOTES_DIR.exists()) {
             Repository.REMOTES_DIR.mkdir();
         }
         if (REMOTES_FILE.exists()) {
-            remoteMap = readObject(REMOTES_FILE, TreeMap.class);
+            remoteMap = (TreeMap<String, String>) readObject(REMOTES_FILE, TreeMap.class);
         } else {
             remoteMap = new TreeMap<>();
         }
@@ -80,7 +81,7 @@ public class Remote implements Serializable {
         }
 
         File remoteCommitFile = join(remoteGitletDir, "commits", commitID);
-        writeContents(localCommitFile, remoteCommitFile);
+        writeContents(localCommitFile, readContents(remoteCommitFile));
         Commit remoteCommit = readObject(remoteCommitFile, Commit.class);
         Map<String, String> remoteCommitFiles = remoteCommit.getFileNameToBlobID();
         for (String blobID : remoteCommitFiles.values()) {
@@ -98,7 +99,26 @@ public class Remote implements Serializable {
         }
     }
 
-    public static void copyCommitsToRemote() {
-        copyCommitsFromRemote(Branch.getCurrentCommitID(), Repository.GITLET_DIR);
+    public static void copyCommitsToRemote(String commitID, File remoteGitletDir) {
+        File remoteCommitFile = join(remoteGitletDir, "commits", commitID);
+        if (remoteCommitFile.exists()) return;
+
+        File localCommitFile = join(Repository.COMMITS_DIR, commitID);
+        writeContents(remoteCommitFile, readContents(localCommitFile));
+        Commit localCommit = readObject(localCommitFile, Commit.class);
+        Map<String, String> fileMap = localCommit.getFileNameToBlobID();
+        for (String blobID : fileMap.values()) {
+            File remoteBlobFile = join(remoteGitletDir, "blobs", blobID);
+            if (!remoteBlobFile.exists()) {
+                File localBlobFile = join(Repository.BLOBS_DIR, blobID);
+                writeContents(remoteBlobFile, readContents(localBlobFile));
+            }
+        }
+
+        copyCommitsToRemote(localCommit.getParentCommitID(), remoteGitletDir);
+        String secondParentID = localCommit.getSecondParentCommitID();
+        if (secondParentID != null) {
+            copyCommitsToRemote(secondParentID, remoteGitletDir);
+        }
     }
 }

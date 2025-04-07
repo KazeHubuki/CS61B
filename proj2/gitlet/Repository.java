@@ -56,6 +56,7 @@ public class Repository implements Serializable {
         BLOBS_DIR.mkdir();
         REFS_DIR.mkdir();
         HEADS_DIR.mkdir();
+        REMOTES_DIR.mkdir();
 
         String initialBranchName = "master";
         Branch.createBranch(initialBranchName, initialCommitID);
@@ -405,18 +406,20 @@ public class Repository implements Serializable {
             writeContents(remoteBranchFile, Commit.getInitialCommitID());
         }
 
+        String currentCommitID = Branch.getCurrentCommitID();
         String branchCommitID = readContentsAsString(remoteBranchFile);
         String splitPointID = Branch.findSplitPoint(branchCommitID);
         if (!splitPointID.equals(branchCommitID)) {
             System.out.println("Please pull down remote changes before pushing.");
             System.exit(0);
         } else {
-            Remote.copyCommitsToRemote();
+            Remote.copyCommitsToRemote(currentCommitID, remoteGitletDir);
         }
-        writeContents(remoteBranchFile, Branch.getCurrentCommitID());
+        writeContents(remoteBranchFile, currentCommitID);
     }
 
     // Fetch a remote branch and stores it to the local directory.
+    // Fetch creates a local branch named "[remote name]/[branch name]"
     public static void fetchRemote(String remoteName, String branchName) {
         Remote remote = Remote.loadRemotes();
         String remotePath = remote.getRemotePath(remoteName);
@@ -442,6 +445,7 @@ public class Repository implements Serializable {
     // Pull a remote branch means fetch it first and merge the current branch to it.
     public static void pullRemote(String remoteName, String branchName) {
         fetchRemote(remoteName, branchName);
-        merge(branchName);
+        String remoteBranchName = remoteName + "/" + branchName;
+        merge(remoteBranchName);
     }
 }
