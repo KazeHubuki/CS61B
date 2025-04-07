@@ -89,10 +89,14 @@ public class Branch {
 
         while (!currentQueue.isEmpty() || !targetQueue.isEmpty()) {
             String cid = tryVisitNext(currentQueue, visitedFromCurrent, visitedFromTarget);
-            if (cid != null) { return cid; }
+            if (cid != null) {
+                return cid;
+            }
 
             cid = tryVisitNext(targetQueue, visitedFromTarget, visitedFromCurrent);
-            if (cid != null) { return cid; }
+            if (cid != null) {
+                return cid;
+            }
         }
 
         return null;
@@ -100,11 +104,17 @@ public class Branch {
 
     private static String tryVisitNext(Queue<String> queue,
                                        Set<String> visitedSelf, Set<String> visitedOther) {
-        if (queue.isEmpty()) { return null; }
+        if (queue.isEmpty()) {
+            return null;
+        }
 
         String cid = queue.poll();
-        if (!visitedSelf.add(cid)) { return null; }
-        if (visitedOther.contains(cid)) { return cid; }
+        if (!visitedSelf.add(cid)) {
+            return null;
+        }
+        if (visitedOther.contains(cid)) {
+            return cid;
+        }
 
         Commit commit = Commit.findCommit(cid);
         if (commit.getParentCommitID() != null) {
@@ -117,9 +127,8 @@ public class Branch {
         return null;
     }
 
-    public static boolean mergeBranch(String branchName)  {
+    public static boolean mergeBranch(String branchName, String splitPointID)  {
         boolean hasConflict = false;
-        String splitPointID = Branch.findSplitPoint(branchName);
         String branchCommitID = Branch.getBranchCurrentCommitID(branchName);
         String currentCommitID = Branch.getCurrentCommitID();
         if (Objects.equals(splitPointID, branchCommitID)) {

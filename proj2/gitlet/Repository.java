@@ -3,10 +3,7 @@ package gitlet;
 import java.io.File;
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 
 import static gitlet.Utils.*;
 
@@ -344,17 +341,29 @@ public class Repository implements Serializable {
             System.exit(0);
         }
 
-        boolean hasMergeConflict = Branch.mergeBranch(branchName);
-        if (stageForAddition.isEmpty() && stageForRemoval.isEmpty()) {
+        String splitPointID = Branch.findSplitPoint(branchName);
+        String branchCommitID = Branch.getBranchCurrentCommitID(branchName);
+        String currentCommitID = Branch.getCurrentCommitID();
+        if (Objects.equals(splitPointID, branchCommitID)) {
+            System.out.println("Given branch is an ancestor of the current branch.");
             return;
         }
+        if (Objects.equals(splitPointID, currentCommitID)) {
+            Repository.checkOutWithBranchName(branchName);
+            Branch.updateBranch(currentBranchName,
+                    Branch.getCurrentCommitID());
+            System.out.println("Current branch fast-forwarded.");
+            return;
+        }
+
+        boolean hasMergeConflict = Branch.mergeBranch(branchName, splitPointID);
         String message;
         if (hasMergeConflict) {
             message = "Encountered a merge conflict.";
         } else {
             message = String.format("Merged %s into %s.", branchName, currentBranchName);
         }
-        String branchCommitID = Branch.getBranchCurrentCommitID(branchName);
+
         commitWithMerge(message, branchCommitID);
     }
 }
