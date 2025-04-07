@@ -32,6 +32,8 @@ public class Commit implements Serializable {
     private String commitID;
     /** The standard length of a commit ID. */
     public static final int STANDARD_COMMIT_ID_LENGTH = 40;
+    /** The initial commit ID. */
+    private static String initialCommitID;
 
     public Commit() {
         timeStamp = new Date(0);
@@ -39,6 +41,7 @@ public class Commit implements Serializable {
         message = "initial commit";
         fileNameToBlobID = new HashMap<>();
         commitID = sha1((Object) serialize(this));
+        initialCommitID = commitID;
     }
 
     public Commit(String message, String parentCommitID,
@@ -169,6 +172,10 @@ public class Commit implements Serializable {
 
     public String getCommitID() {
         return commitID;
+    }
+
+    public static String getInitialCommitID() {
+        return initialCommitID;
     }
 
     @Override

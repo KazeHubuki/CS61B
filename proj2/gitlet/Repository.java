@@ -1,6 +1,7 @@
 package gitlet;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.*;
@@ -33,6 +34,8 @@ public class Repository implements Serializable {
     public static final File REFS_DIR = join(GITLET_DIR, "refs");
     /** The .gitlet/refs/heads directory. (stores local branches) */
     public static final File HEADS_DIR = join(REFS_DIR, "heads");
+    /** The .gitlet/refs/remotes directory. (stores remotes) */
+    public static final File REMOTES_DIR = join(REFS_DIR, "remotes");
 
     /** HEAD file stores the name of the current branch. */
     public static final File HEAD = join(GITLET_DIR, "HEAD");
@@ -346,9 +349,9 @@ public class Repository implements Serializable {
             System.exit(0);
         }
 
-        String splitPointID = Branch.findSplitPoint(branchName);
         String branchCommitID = Branch.getBranchCurrentCommitID(branchName);
         String currentCommitID = Branch.getCurrentCommitID();
+        String splitPointID = Branch.findSplitPoint(branchCommitID);
         if (Objects.equals(splitPointID, branchCommitID)) {
             // Split point is the branch commit, do nothing.
             System.out.println("Given branch is an ancestor of the current branch.");
@@ -372,5 +375,73 @@ public class Repository implements Serializable {
         }
 
         commitWithMerge(message, branchCommitID);
+    }
+
+    public static void addRemote(String remoteName, String remotePath) {
+        Remote remote = Remote.loadRemotes();
+        remote.addRemote(remoteName, remotePath);
+    }
+
+    public static void removeRemote(String remoteName) {
+        Remote remote = Remote.loadRemotes();
+        remote.removeRemote(remoteName);
+    }
+
+    // Push the current branch to the given remote branch;
+    // if the branch does not exist, then create one.
+    // Can only push when the given remote branch is an ancestor of the current branch.
+    public static void pushRemote(String remoteName, String branchName) throws IOException {
+        Remote remote = Remote.loadRemotes();
+        String remotePath = remote.getRemotePath(remoteName);
+        File remoteGitletDir = new File(remotePath);
+        if (!remoteGitletDir.exists()) {
+            System.out.println("Remote directory not found.");
+            System.exit(0);
+        }
+
+        File remoteBranchFile = join(remoteGitletDir, "refs", "heads", branchName);
+        if (!remoteBranchFile.exists()) {
+            remoteBranchFile.createNewFile();
+            writeContents(remoteBranchFile, Commit.getInitialCommitID());
+        }
+
+        String branchCommitID = readContentsAsString(remoteBranchFile);
+        String splitPointID = Branch.findSplitPoint(branchCommitID);
+        if (!splitPointID.equals(branchCommitID)) {
+            System.out.println("Please pull down remote changes before pushing.");
+            System.exit(0);
+        } else {
+            Remote.copyCommitsToRemote();
+        }
+        writeContents(remoteBranchFile, Branch.getCurrentCommitID());
+    }
+
+    // Fetch a remote branch and stores it to the local directory.
+    public static void fetchRemote(String remoteName, String branchName) {
+        Remote remote = Remote.loadRemotes();
+        String remotePath = remote.getRemotePath(remoteName);
+        File remoteGitletDir = new File(remotePath);
+        if (!remoteGitletDir.exists()) {
+            System.out.println("Remote directory not found.");
+            System.exit(0);
+        }
+
+        File remoteBranchFile = join(remoteGitletDir, "refs", "heads", branchName);
+        if (!remoteBranchFile.exists()) {
+            System.out.println("That remote does not have that branch.");
+            System.exit(0);
+        }
+
+        String remoteCurrentCommitID = readContentsAsString(remoteBranchFile);
+        Remote.copyCommitsFromRemote(remoteCurrentCommitID, remoteGitletDir);
+
+        File localRemoteBranch = join(HEADS_DIR, remoteName, branchName);
+        writeContents(localRemoteBranch, remoteCurrentCommitID);
+    }
+
+    // Pull a remote branch means fetch it first and merge the current branch to it.
+    public static void pullRemote(String remoteName, String branchName) {
+        fetchRemote(remoteName, branchName);
+        merge(branchName);
     }
 }

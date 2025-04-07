@@ -80,17 +80,15 @@ public class Branch {
     }
 
     // Use BFS to find the split point when merging two branches.
-    public static String findSplitPoint(String branchName) {
-        String currentCommitID = getCurrentCommitID();
-        String targetCommitID = getBranchCurrentCommitID(branchName);
-
+    public static String findSplitPoint(String branchCommitID) {
         Set<String> visitedFromCurrent = new HashSet<>();
         Set<String> visitedFromTarget = new HashSet<>();
         Queue<String> currentQueue = new LinkedList<>();
         Queue<String> targetQueue = new LinkedList<>();
 
+        String currentCommitID = getCurrentCommitID();
         currentQueue.add(currentCommitID);
-        targetQueue.add(targetCommitID);
+        targetQueue.add(branchCommitID);
 
         while (!currentQueue.isEmpty() || !targetQueue.isEmpty()) {
             String commitID = tryVisitNext(currentQueue,
