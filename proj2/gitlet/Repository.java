@@ -436,14 +436,14 @@ public class Repository implements Serializable {
         String remoteCurrentCommitID = readContentsAsString(remoteBranchFile);
         Remote.copyCommitsFromRemote(remoteCurrentCommitID, remoteGitletDir);
 
-        File localRemoteBranch = join(HEADS_DIR, remoteName + "/" + branchName);
+        File localRemoteBranch = join(HEADS_DIR, remoteName + "_" + branchName);
         writeContents(localRemoteBranch, remoteCurrentCommitID);
     }
 
     // Pull a remote branch means fetch it first and merge the current branch to it.
     public static void pullRemote(String remoteName, String branchName) {
         fetchRemote(remoteName, branchName);
-        String remoteBranchName = remoteName + "/" + branchName;
+        String remoteBranchName = remoteName + "_" + branchName;
         merge(remoteBranchName);
     }
 }
