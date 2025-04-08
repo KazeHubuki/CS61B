@@ -9,29 +9,12 @@ import static gitlet.Utils.*;
 public class Branch {
 
     public static void createBranch(String branchName, String currentCommitID) {
-        if (!Repository.HEADS_DIR.exists()) {
-            Repository.HEADS_DIR.mkdir();
-        }
-        File branchFile = getBranchFile(branchName);
+        File branchFile = join(Repository.HEADS_DIR, branchName);
         if (branchFile.exists()) {
             System.out.println("A branch with that name already exists.");
             System.exit(0);
         }
         writeContents(branchFile, currentCommitID);
-    }
-
-    // A fetched remote branch will be stored with name "remote name/branch name",
-    // which requires special handling
-     private static File getBranchFile(String branchName) {
-        if (branchName.contains("/")) {
-            String[] parts = branchName.split("/", 2);
-            if (parts.length < 2) {
-                throw new IllegalArgumentException("Invalid remote branch name format.");
-            }
-            return join(Repository.HEADS_DIR, parts[0], parts[1]);
-        } else {
-            return join(Repository.HEADS_DIR, branchName);
-        }
     }
 
     // Update the current commit of the given branch to the given commit.
@@ -49,7 +32,7 @@ public class Branch {
     }
 
     public static String getBranchCurrentCommitID(String branchName) {
-        File branchFile = getBranchFile(branchName);
+        File branchFile = join(Repository.HEADS_DIR, branchName);
         return readContentsAsString(branchFile);
     }
 

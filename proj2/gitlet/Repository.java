@@ -436,12 +436,7 @@ public class Repository implements Serializable {
         String remoteCurrentCommitID = readContentsAsString(remoteBranchFile);
         Remote.copyCommitsFromRemote(remoteCurrentCommitID, remoteGitletDir);
 
-        // Create the directory structure for the remote branch
-        File localRemoteBranchDir = join(HEADS_DIR, remoteName);
-        if (!localRemoteBranchDir.exists()) {
-            localRemoteBranchDir.mkdirs();
-        }
-        File localRemoteBranch = join(localRemoteBranchDir, branchName);
+        File localRemoteBranch = join(HEADS_DIR, remoteName + "/" + branchName);
         writeContents(localRemoteBranch, remoteCurrentCommitID);
     }
 
