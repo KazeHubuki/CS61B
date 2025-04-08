@@ -87,16 +87,15 @@ public class Branch {
     }
 
     // Use BFS to find the split point when merging two branches.
-    public static String findSplitPoint(String targetCommitID) {
-        String currentCommitID = getCurrentCommitID();
-
+    public static String findSplitPoint(String branchCommitID) {
         Set<String> visitedFromCurrent = new HashSet<>();
         Set<String> visitedFromTarget = new HashSet<>();
         Queue<String> currentQueue = new LinkedList<>();
         Queue<String> targetQueue = new LinkedList<>();
 
+        String currentCommitID = getCurrentCommitID();
         currentQueue.add(currentCommitID);
-        targetQueue.add(targetCommitID);
+        targetQueue.add(branchCommitID);
 
         while (!currentQueue.isEmpty() || !targetQueue.isEmpty()) {
             String commitID = tryVisitNext(currentQueue,
@@ -117,29 +116,27 @@ public class Branch {
 
     private static String tryVisitNext(Queue<String> queue,
                                        Set<String> visitedSelf, Set<String> visitedOther) {
-        if (queue.isEmpty()) {
-            return null;
-        }
+        while (!queue.isEmpty()) {
+            String commitID = queue.poll();
 
-        String commitID = queue.poll();
-        if (!visitedSelf.add(commitID)) {
-            return null;
-        }
-        if (visitedOther.contains(commitID)) {
-            return commitID;
-        }
+            if (!visitedSelf.add(commitID)) {
+                continue;
+            }
+            if (visitedOther.contains(commitID)) {
+                return commitID;
+            }
 
-        Commit commit = Commit.findCommit(commitID);
-        if (commit == null) {
-            return null;
+            Commit commit = Commit.findCommit(commitID);
+            if (commit == null) {
+                continue;
+            }
+            if (commit.getParentCommitID() != null) {
+                queue.add(commit.getParentCommitID());
+            }
+            if (commit.getSecondParentCommitID() != null) {
+                queue.add(commit.getSecondParentCommitID());
+            }
         }
-        if (commit.getParentCommitID() != null) {
-            queue.add(commit.getParentCommitID());
-        }
-        if (commit.getSecondParentCommitID() != null) {
-            queue.add(commit.getSecondParentCommitID());
-        }
-
         return null;
     }
 
