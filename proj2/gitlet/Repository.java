@@ -407,7 +407,7 @@ public class Repository implements Serializable {
         String currentCommitID = Branch.getCurrentCommitID();
         String branchCommitID = readContentsAsString(remoteBranchFile);
         String splitPointID = Branch.findSplitPoint(branchCommitID);
-        if (!splitPointID.equals(branchCommitID)) {
+        if (splitPointID == null || !splitPointID.equals(branchCommitID)) {
             System.out.println("Please pull down remote changes before pushing.");
             System.exit(0);
         } else {

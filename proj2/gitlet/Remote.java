@@ -69,7 +69,7 @@ public class Remote implements Serializable {
         return remoteMap;
     }
 
-     // Normalize the path to match system-specific separator.
+    // Normalize the path to match system-specific separator.
     private String normalizePath(String inputPath) {
         return inputPath.replace("/", File.separator);
     }
