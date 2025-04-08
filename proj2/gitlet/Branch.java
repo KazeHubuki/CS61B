@@ -31,9 +31,16 @@ public class Branch {
         return getBranchCurrentCommitID(getCurrentBranchName());
     }
 
+    public static File getBranchFile(String fileName) {
+        return join(Repository.HEADS_DIR, fileName.replace("/", "_"));
+    }
+
+    public static String decodeBranchName(String escapedName) {
+        return escapedName.replace("_", "/");
+    }
+
     public static String getBranchCurrentCommitID(String branchName) {
-        File branchFile = join(Repository.HEADS_DIR, branchName);
-        return readContentsAsString(branchFile);
+        return readContentsAsString(getBranchFile(branchName));
     }
 
     // Checkout all the files in the given branch.
@@ -80,9 +87,8 @@ public class Branch {
     }
 
     // Use BFS to find the split point when merging two branches.
-    public static String findSplitPoint(String branchName) {
+    public static String findSplitPoint(String targetCommitID) {
         String currentCommitID = getCurrentCommitID();
-        String targetCommitID = getBranchCurrentCommitID(branchName);
 
         Set<String> visitedFromCurrent = new HashSet<>();
         Set<String> visitedFromTarget = new HashSet<>();
@@ -124,6 +130,9 @@ public class Branch {
         }
 
         Commit commit = Commit.findCommit(commitID);
+        if (commit == null) {
+            return null;
+        }
         if (commit.getParentCommitID() != null) {
             queue.add(commit.getParentCommitID());
         }

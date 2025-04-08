@@ -42,7 +42,7 @@ public class Repository implements Serializable {
     public static void init() {
         if (GITLET_DIR.exists()) {
             System.out.println("A Gitlet version-control system already exists"
-                               + "in the current directory.");
+                    + "in the current directory.");
             System.exit(0);
         }
         GITLET_DIR.mkdir();
@@ -253,7 +253,7 @@ public class Repository implements Serializable {
 
     // Turn to the given branch.
     public static void checkOutWithBranchName(String branchName) {
-        File branchToBeCheckedOutFile = join(HEADS_DIR, branchName);
+        File branchToBeCheckedOutFile = Branch.getBranchFile(branchName);
         if (!branchToBeCheckedOutFile.exists()) {
             System.out.println("No such branch exists.");
             System.exit(0);
@@ -349,9 +349,9 @@ public class Repository implements Serializable {
             System.exit(0);
         }
 
+        String splitPointID = Branch.findSplitPoint(branchName);
         String branchCommitID = Branch.getBranchCurrentCommitID(branchName);
         String currentCommitID = Branch.getCurrentCommitID();
-        String splitPointID = Branch.findSplitPoint(branchCommitID);
         if (Objects.equals(splitPointID, branchCommitID)) {
             // Split point is the branch commit, do nothing.
             System.out.println("Given branch is an ancestor of the current branch.");
@@ -371,7 +371,7 @@ public class Repository implements Serializable {
         if (hasMergeConflict) {
             message = "Encountered a merge conflict.";
         } else {
-            message = String.format("Merged %s into %s.", branchName, currentBranchName);
+            message = String.format("Merged %s into %s.", Branch.decodeBranchName(branchName), currentBranchName);
         }
 
         commitWithMerge(message, branchCommitID);
@@ -443,7 +443,6 @@ public class Repository implements Serializable {
     // Pull a remote branch means fetch it first and merge the current branch to it.
     public static void pullRemote(String remoteName, String branchName) {
         fetchRemote(remoteName, branchName);
-        String remoteBranchName = remoteName + "_" + branchName;
-        merge(remoteBranchName);
+        merge(remoteName + "_" + branchName);
     }
 }
