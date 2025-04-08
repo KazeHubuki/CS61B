@@ -122,6 +122,9 @@ public class Branch {
         }
 
         Commit commit = Commit.findCommit(commitID);
+        if (commit == null) {
+            return null;
+        }
         if (commit.getParentCommitID() != null) {
             queue.add(commit.getParentCommitID());
         }

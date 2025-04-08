@@ -402,12 +402,6 @@ public class Repository implements Serializable {
 
         File remoteBranchFile = join(remoteGitletDir, "refs", "heads", branchName);
         if (!remoteBranchFile.exists()) {
-            try {
-                remoteBranchFile.createNewFile();
-            } catch (IOException e) {
-                System.out.println("Failed to create the branch file.");
-                System.exit(0);
-            }
             writeContents(remoteBranchFile, Commit.getInitialCommitID());
         }
 
@@ -443,7 +437,12 @@ public class Repository implements Serializable {
         String remoteCurrentCommitID = readContentsAsString(remoteBranchFile);
         Remote.copyCommitsFromRemote(remoteCurrentCommitID, remoteGitletDir);
 
-        File localRemoteBranch = join(HEADS_DIR, remoteName, branchName);
+        // Create the directory structure for the remote branch
+        File localRemoteBranchDir = join(HEADS_DIR, remoteName);
+        if (!localRemoteBranchDir.exists()) {
+            localRemoteBranchDir.mkdirs();
+        }
+        File localRemoteBranch = join(localRemoteBranchDir, branchName);
         writeContents(localRemoteBranch, remoteCurrentCommitID);
     }
 

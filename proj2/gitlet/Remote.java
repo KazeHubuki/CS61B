@@ -9,7 +9,7 @@ import static gitlet.Utils.*;
 
 /**
  * Stores remote repository mappings.
- * The mappings are saved in .gitlet/remotes file as a serialized HashMap.
+ * The mappings are saved in .gitlet/remotes file as a serialized TreeMap.
  */
 public class Remote implements Serializable {
 
@@ -75,6 +75,9 @@ public class Remote implements Serializable {
     }
 
     public static void copyCommitsFromRemote(String commitID, File remoteGitletDir) {
+        if (commitID == null) {
+            return;
+        }
         File localCommitFile = join(Repository.COMMITS_DIR, commitID);
         if (localCommitFile.exists()) {
             return;
@@ -101,7 +104,9 @@ public class Remote implements Serializable {
 
     public static void copyCommitsToRemote(String commitID, File remoteGitletDir) {
         File remoteCommitFile = join(remoteGitletDir, "commits", commitID);
-        if (remoteCommitFile.exists()) return;
+        if (remoteCommitFile.exists()) {
+            return;
+        }
 
         File localCommitFile = join(Repository.COMMITS_DIR, commitID);
         writeContents(remoteCommitFile, readContents(localCommitFile));
